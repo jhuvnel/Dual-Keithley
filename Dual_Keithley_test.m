@@ -1,19 +1,19 @@
-% Author: Celia Fernandez Brillet
-% Date: 11/15/22
-% Description:script to connect to Keithley 6221 and program it to send out
-% pulses or DC (monophasic or biphasic).
+% Author: Evan Vesper
+% 9/27/2023
+% Description:script to connect to two Keithley 6221's and program the to
+% send out pulses or DC (monophasic or biphasic).
 
 %% Initialize each serial connection and query Keithleys
 % Delete instrument objects that are still open 
 clc
 % establish serial port connection - make sure Baud rate and terminator
 % match what is selected on the Keithley 6221
-s = serialport("COM4",19200,"Timeout",5); % first Keithley
-configureTerminator(s, "LF") % set line terminator
+s = serialport("COM8",57600,"Timeout",5); % first Keithley
+configureTerminator(s, "LF") % set line terdminator
 % Query the Keithely to identify itself
 writeline(s, '*idn?')
 response = readline(s) % show Keithley's response
-
+%%
 s2 = serialport("COM7",19200, "Timeout", 5); % second Keithley
 configureTerminator(s2, "LF") % set line terminator
 % Query the Keithely to identify itself
@@ -50,11 +50,11 @@ writeline(s, 'sour:wave:func arb0')
 % Compliance voltage (V)
 writeline(s, 'curr:comp 50')
 % Current amplitude (A)
-writeline(s, 'sour:wave:ampl 300e-6')
+writeline(s, 'sour:wave:ampl 20e-6')
 % How many cycles I want
-writeline(s, 'sour:wave:dur:cycl 2')
+% writeline(s, 'sour:wave:dur:cycl 2')
 % Alternative for defining duration: how long do I want it to last (s)
-% writeline(s, 'sour:wave:dur:time 4') % duration for 4 seconds
+writeline(s, 'sour:wave:dur:time 30') % duration for 4 seconds
 % Frequency of the waveform. I think of this as the resolution for the duration of
 % my waveform. So if it's 400 Hz, then 1/400 = 2500 us
 % Now, since I have 25 slots in my waveform, that means that each one is
@@ -62,10 +62,14 @@ writeline(s, 'sour:wave:dur:cycl 2')
 writeline(s, 'sour:wave:freq 400')
 
 
-writeline(s,'sour:wave:extrig:ilin 1') % specify external trigger line 1
-writeline(s, 'sour:wave:extrig ON') % set external triggering on
+% writeline(s,'sour:wave:extrig:ilin 1') % specify external trigger line 1
+% writeline(s, 'sour:wave:extrig ON') % set external triggering on
 
-writeline(s, 'output off')
+% writeline(s,'sour:wave:extrig:ilin 1') % specify external trigger line 1
+% writeline(s, 'sour:wave:extrig OFF') % set external triggering on
+
+
+% writeline(s, 'output off')
 writeline(s, 'sour:wave:arm')
 writeline(s, 'sour:wave:init')
             
@@ -287,9 +291,47 @@ fprintf(s, 'output off')
 fprintf(s, 'sour:wave:arm')
 fprintf(s, 'sour:wave:init')
 
+
+%% Felix Aplin DC Ramp
+writeline(s, "*rst");
+writeline(s, "curr:rang 2e-4");
+writeline(s, "curr:comp 105");
+writeline(s, "curr 0");
+writeline(s, "outp:ish guar");
+writeline(s, "outp:lte on");
+writeline(s, "sour:wave:extr:ival 0");
+% Cathodic phase ramp up
+writeline(s, "sour:wave:arb:data -0.1,-0.2,-0.3,-0.4,-0.5,-0.6,-0.7,-0.8,-0.9,-1.0");
+% Cathodic phase peak
+writeline(s, "sour:wave:arb:app -1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0");
+% Cathodic phase ramp down
+writeline(s, "sour:wave:arb:app -1.0,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1");
+% Interphase gap
+writeline(s, "sour:wave:arb:app 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+writeline(s, "sour:wave:arb:app 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+% Anodic phase ramp up
+writeline(s, "sour:wave:arb:app 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0");
+% Anodic phase peak
+writeline(s, "sour:wave:arb:app 1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0");
+% Anodic phase ramp down
+writeline(s, "sour:wave:arb:app 1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1");
+% Interstim gap
+writeline(s, "sour:wave:arb:app 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+writeline(s, "sour:wave:arb:app 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+writeline(s, "sour:wave:func arb0; freq 0.5; ampl 20e-6; offs 10e-6; rang fix; dur:cycl inf");
+writeline(s, "sour:wave:extr 0");
+writeline(s, "sour:wave:extr:ilin 1");
+writeline(s, "sour:wave:extr:ival 0");
+writeline(s, "sour:wave:pmar:stat on"); % marker phase
+writeline(s, "sour:wave:pmar 0");
+
+writeline(s, 'sour:wave:arm');
+writeline(s, 'sour:wave:init');
+
+% writeline(s, 'sour:wave:abor')
 %% Disconnecting
 
 % Disconnect and clean up the server connection.
-fclose(s);
+
 delete(s);
 clear s
